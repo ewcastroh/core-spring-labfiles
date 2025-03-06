@@ -1,8 +1,10 @@
 package config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import rewards.internal.monitor.MonitorFactory;
 import rewards.internal.monitor.jamon.JamonMonitorFactory;
 
@@ -14,6 +16,8 @@ import rewards.internal.monitor.jamon.JamonMonitorFactory;
 //   (Note that this annotation is redundant for Spring Boot
 //    application since it will be automatically added through
 //    auto configuration.)
+@ComponentScan("rewards.internal.aspects")
+@EnableAspectJAutoProxy
 @Configuration
 public class AspectsConfig {
 

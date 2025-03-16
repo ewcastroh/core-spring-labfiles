@@ -3,6 +3,8 @@ package rewards.internal.account;
 import common.money.MonetaryAmount;
 import common.money.Percentage;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -27,11 +29,17 @@ import java.sql.SQLException;
 //   object using the given DataSource object.
 public class JdbcAccountRepository implements AccountRepository {
 
-	private DataSource dataSource;
+	// private DataSource dataSource;
+	private JdbcTemplate jdbcTemplate;
 
-	public JdbcAccountRepository(DataSource dataSource) {
+	/*public JdbcAccountRepository(DataSource dataSource) {
 		this.dataSource = dataSource;
+	}*/
+	public JdbcAccountRepository(JdbcTemplate jdbcTemplate) {
+		this.jdbcTemplate = jdbcTemplate;
 	}
+
+	private ResultSetExtractor<Account> accountExtractor = new AccountExtractor();
 
 	// TODO-07 (Optional): Refactor this method using JdbcTemplate and ResultSetExtractor
 	// - Create a ResultSetExtractor object and pass it as an argument
@@ -47,7 +55,7 @@ public class JdbcAccountRepository implements AccountRepository {
 			"on a.ID = b.ACCOUNT_ID " +
 			"where c.ACCOUNT_ID = a.ID and c.NUMBER = ?";
 		
-		Account account = null;
+		/*Account account = null;
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -82,7 +90,9 @@ public class JdbcAccountRepository implements AccountRepository {
 				}
 			}
 		}
-		return account;
+		return account;*/
+		// return jdbcTemplate.query(sql, accountExtractor, creditCardNumber);
+		return jdbcTemplate.query(sql, new Object[]{creditCardNumber}, accountExtractor);
 	}
 
 	// TODO-06: Refactor this method to use JdbcTemplate.
@@ -92,7 +102,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	// - Rerun the JdbcAccountRepositoryTests and verify it passes
 	public void updateBeneficiaries(Account account) {
 		String sql = "update T_ACCOUNT_BENEFICIARY SET SAVINGS = ? where ACCOUNT_ID = ? and NAME = ?";
-		Connection conn = null;
+		/*Connection conn = null;
 		PreparedStatement ps = null;
 		try {
 			conn = dataSource.getConnection();
@@ -120,6 +130,9 @@ public class JdbcAccountRepository implements AccountRepository {
 				} catch (SQLException ex) {
 				}
 			}
+		}*/
+		for (Beneficiary b : account.getBeneficiaries()) {
+			jdbcTemplate.update(sql, b.getSavings().asBigDecimal(), account.getEntityId(), b.getName());
 		}
 	}
 
@@ -162,5 +175,12 @@ public class JdbcAccountRepository implements AccountRepository {
 		MonetaryAmount savings = MonetaryAmount.valueOf(rs.getString("BENEFICIARY_SAVINGS"));
 		Percentage allocationPercentage = Percentage.valueOf(rs.getString("BENEFICIARY_ALLOCATION_PERCENTAGE"));
 		return new Beneficiary(name, allocationPercentage, savings);
+	}
+
+	private class AccountExtractor implements ResultSetExtractor<Account> {
+		@Override
+		public Account extractData(ResultSet rs) throws SQLException {
+			return mapAccount(rs);
+		}
 	}
 }

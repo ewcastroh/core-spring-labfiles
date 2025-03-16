@@ -1,6 +1,7 @@
 package rewards.internal.reward;
 
 import common.datetime.SimpleDate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import rewards.AccountContribution;
 import rewards.Dining;
 import rewards.RewardConfirmation;
@@ -36,10 +37,14 @@ import java.sql.*;
 
 public class JdbcRewardRepository implements RewardRepository {
 
-	private DataSource dataSource;
+	// private DataSource dataSource;
+	private JdbcTemplate jdbcTemplate;
 
-	public JdbcRewardRepository(DataSource dataSource) {
+	/*public JdbcRewardRepository(DataSource dataSource) {
 		this.dataSource = dataSource;
+	}*/
+	public JdbcRewardRepository(JdbcTemplate jdbcTemplate) {
+		this.jdbcTemplate = jdbcTemplate;
 	}
 
 	public RewardConfirmation confirmReward(AccountContribution contribution, Dining dining) {
@@ -47,7 +52,7 @@ public class JdbcRewardRepository implements RewardRepository {
 		String confirmationNumber = nextConfirmationNumber();
 
 		// Update the T_REWARD table with the new Reward
-		try (Connection conn = dataSource.getConnection();
+		/*try (Connection conn = dataSource.getConnection();
 			 PreparedStatement ps = conn.prepareStatement(sql)) {
 			
 			ps.setString(1, confirmationNumber);
@@ -60,8 +65,10 @@ public class JdbcRewardRepository implements RewardRepository {
 			ps.execute();
 		} catch (SQLException e) {
 			throw new RuntimeException("SQL exception occurred inserting reward record", e);
-		}
-		
+		}*/
+		jdbcTemplate.update(sql, confirmationNumber, contribution.getAmount().asBigDecimal(),
+				SimpleDate.today().asDate(), contribution.getAccountNumber(), dining.getMerchantNumber(),
+				dining.getDate().asDate(), dining.getAmount().asBigDecimal());
 		return new RewardConfirmation(confirmationNumber, contribution);
 	}
 
@@ -69,14 +76,15 @@ public class JdbcRewardRepository implements RewardRepository {
 		String sql = "select next value for S_REWARD_CONFIRMATION_NUMBER from DUAL_REWARD_CONFIRMATION_NUMBER";
 		String nextValue;
 		
-		try (Connection conn = dataSource.getConnection(); 
+		/*try (Connection conn = dataSource.getConnection();
 			 PreparedStatement ps = conn.prepareStatement(sql);
 			 ResultSet rs = ps.executeQuery()) {
 			rs.next();
 			nextValue = rs.getString(1);
 		} catch (SQLException e) {
 			throw new RuntimeException("SQL exception getting next confirmation number", e);
-		}
+		}*/
+		nextValue = jdbcTemplate.queryForObject(sql, String.class);
 		
 		return nextValue;
 	}
